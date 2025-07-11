@@ -13,29 +13,19 @@ from typing import Any, Dict, List, Tuple
 
 from tqdm import tqdm
 
-# ──────────────────────────────────────────────────────────────────────────
-# Globals & 환경 설정
-# ──────────────────────────────────────────────────────────────────────────
-os.environ["TOKENIZERS_PARALLELISM"] = "false"   # transformers 경고 억제
-
 BASE_CODE_DIR: Path = Path("./python_code")
 BASE_ERR_DIR: Path = Path("./python_error")
 BASE_CODE_DIR.mkdir(parents=True, exist_ok=True)
 BASE_ERR_DIR.mkdir(parents=True, exist_ok=True)
 
-
-
-# ──────────────────────────────────────────────────────────────────────────
-# I/O 헬퍼
-# ──────────────────────────────────────────────────────────────────────────
 def read_jsonl_gz(fn: Path) -> List[Dict[str, Any]]:
-    """gzip-압축 JSONL → List[dict]"""
+    """gzip-압축 JSONL => List[dict]"""
     with gzip.open(fn, "rt", encoding="utf-8") as f:
         return [json.loads(line) for line in f]
 
 
 def save_jsonl_gz(objs: List[Dict[str, Any]], fn: Path) -> None:
-    """List[dict] → gzip-압축 JSONL 저장"""
+    """List[dict] => gzip-압축 JSONL 저장"""
     fn.parent.mkdir(parents=True, exist_ok=True)
     with gzip.open(fn, "wt", encoding="utf-8") as f:
         for obj in objs:
@@ -47,16 +37,13 @@ def write_code_file(path: Path, code: str) -> None:
     path.write_text(code, encoding="utf-8")
 
 
-# ──────────────────────────────────────────────────────────────────────────
-# 테스트 실행
-# ──────────────────────────────────────────────────────────────────────────
 def _normalize_stdin(raw: str) -> str:
     """
     trace_code 에서 뽑아온 입력 문자열에는 \\n, \\t 같은
     '이스케이프 시퀀스'가 글자로 들어있다.
     -> 실제 제어문자로 변환.
 
-    예)  "1 2\\n3 4"  →  "1 2\n3 4"
+    예)  "1 2\\n3 4"  =>  "1 2\n3 4"
     """
     try:
         norm = codecs.decode(raw, "unicode_escape")
@@ -71,7 +58,7 @@ def run_python(file_path: str, stdin: str, timeout: int = 20) -> str:
     """
     `python file_path` 를 실행하고 stdout(또는 stderr)을 문자열로 돌려준다.
     - stdin 은 trace 에서 추출한 뒤 _normalize_stdin() 으로 보정.
-    - 예외 상황에서도 항상 str 반환 → 후속 로직 안전.
+    - 예외 상황에서도 항상 str 반환 => 후속 로직 안전.
     """
     # stdin = _normalize_stdin(stdin)
 
@@ -94,30 +81,23 @@ def run_python(file_path: str, stdin: str, timeout: int = 20) -> str:
         print(f"Error executing {file_path}: {exc}", file=sys.stderr)
         return ""
 
-# ──────────────────────────────────────────────────────────────────────────
-# 단일 샘플 처리
-# ──────────────────────────────────────────────────────────────────────────
 def process_sample(
     args: Tuple[
-        Dict[str, Any],  # single_data
-        str,             # test_input
-        str,             # header_str ( @Input … @Expected … )
-        str,             # var_trace_str
-        List[str],       # statements
+        Dict[str, Any],  
+        str,             
+        str,             
+        str,             
+        List[str],       
     ]
 ) -> Dict[str, Any]:
     single, test_input, header_str, var_trace, stmts = args
 
-    # 1) 코드 파일 생성
     py_path = BASE_CODE_DIR / f"python_{single['pid']}_{single['code_index']}.py"
     write_code_file(py_path, single["raw_incorrect"])
 
-    # 2) 실제 실행
     actual_output = run_python(str(py_path), test_input)
     actual_output = actual_output.replace("\n", " ").replace("\t", " ").strip()
 
-
-    # 3) Expected 문자열만 한 줄로 정리
     exp_part = (
         header_str.split("@Expected = [", 1)[1]
         .split("]", 1)[0]
@@ -125,15 +105,11 @@ def process_sample(
         .strip()
     )
 
-    # 4) 새롭게 합성
     io_prefix = header_str.split("@Expected = [", 1)[0]
     io_full = f"{io_prefix}@Expected = [{exp_part}] @Actual = [{actual_output}]"
 
-
-    # 5) 골드 라인 번호 추출
     gold_lines = ", ".join(re.findall(r"^\d+", "\n".join(stmts), flags=re.M))
 
-    # 6) 필드 삽입
     new_data = copy.deepcopy(single)
     new_data["input_expected_actual"] = io_full
     new_data["input_expected_actual_gold"] = f"{io_full} @Location = [{gold_lines}]"
@@ -144,9 +120,6 @@ def process_sample(
     return new_data
 
 
-# ──────────────────────────────────────────────────────────────────────────
-# 메인
-# ──────────────────────────────────────────────────────────────────────────
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -164,12 +137,9 @@ def main() -> None:
     global data_type
     data_type = args.data_type
 
-    DATA_PATH: Path = Path(f"./data/{data_type}_filtered_tc_cov.jsonl.gz")
+    DATA_PATH: Path = Path(f"./python_data/{data_type}_filtered_tc_cov.jsonl.gz")
 
-    # 1) 원본 데이터 읽기
     raw_records = read_jsonl_gz(DATA_PATH)
-
-    # 2) 태스크 준비
     tasks: List[
         Tuple[Dict[str, Any], str, str, str, List[str]]
     ] = []  # (sample, input, header, var_trace, statements)
@@ -184,7 +154,6 @@ def main() -> None:
 
         tasks.append((rec, test_input, header_str, var_trace, rec["statement"]))
 
-    # 3) 병렬 처리
     cpu_cnt = max(1, min(32, os.cpu_count() or 1))
     results: List[Dict[str, Any]] = []
     with mp.Pool(cpu_cnt) as pool:
@@ -196,15 +165,13 @@ def main() -> None:
         ):
             results.append(item)
 
-    # 4) 저장
     out_name = (
         f"{data_type}_filtered_single_tc.jsonl.gz"
         if args.mode == "single"
         else f"{data_type}_filtered_all_tc.jsonl.gz"
     )
-    save_jsonl_gz(results, Path("./data") / out_name)
+    save_jsonl_gz(results, Path("./python_data") / out_name)
 
-    # 5) 통계 출력
     print(f"\nOriginal : {len(tasks):,}")
     print(f"Saved    : {len(results):,}")
 

@@ -28,7 +28,7 @@ def main():
     parser.add_argument("--level", default = 'very_hard', type=str)
     args = parser.parse_args()
     
-    raw_file = os.path.join(os.getcwd(), f'python_{args.level}_final_filtered_all.jsonl.gz')
+    raw_file = os.path.join(os.getcwd(), 'python_data', f'python_{args.level}_final_filtered_all.jsonl.gz')
     raw_data_list = read_jsonl_gz(raw_file)
 
     parse_by_key = {}
@@ -68,7 +68,6 @@ def main():
                 yes_exist = True
                 incorrect_check += 1
         
-        # Filter Only SBFL able data (Correct Test Case exists, Incorrect Test Case exist)
         if (no_exist and yes_exist) and incorrect_check >= 5:
             sbfl_able_data_list.append(copy.deepcopy(single_code))
             
@@ -80,7 +79,7 @@ def main():
     print(f'Before Data filtering: {len(raw_data_list)}')
     print(f'After Data filtering: {len(sbfl_able_data_list) * 10}')
     
-    save_dict_list_to_jsonl_gz(sbfl_able_data_list, os.path.join(os.getcwd(), f'python_data/{args.level}_data.jsonl.gz'))
+    save_dict_list_to_jsonl_gz(sbfl_able_data_list, os.path.join(os.getcwd(), f'{args.level}_data.jsonl.gz'))
     
 if __name__ == "__main__":
     main()

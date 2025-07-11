@@ -78,8 +78,8 @@ def main():
     
     base_path = os.getcwd()
     print(f'{data_type} data filtering started')
-    single_case_data_path = os.path.join(base_path, f'./data/{data_type}_filtered_single_tc.jsonl.gz')
-    all_cases_data_path = os.path.join(base_path, f'./data/{data_type}_filtered_all_tc.jsonl.gz')
+    single_case_data_path = os.path.join(base_path, f'./python_data/{data_type}_filtered_single_tc.jsonl.gz')
+    all_cases_data_path = os.path.join(base_path, f'./python_data/{data_type}_filtered_all_tc.jsonl.gz')
     
     # Loading Trace added python data path
     path_dict = {
@@ -142,7 +142,7 @@ def main():
             
         tqdm.write(f'{d_t} data length = {len(json_data)}')
         tqdm.write(f'filtered {d_t} data length = {len(final_data_list)}')
-        save_dict_list_to_jsonl_gz(final_data_list, os.path.join(base_path, f'python_{data_type}_final_filtered_{d_t}.jsonl.gz'))
+        save_dict_list_to_jsonl_gz(final_data_list, os.path.join(base_path, f'./python_data/python_{data_type}_final_filtered_{d_t}.jsonl.gz'))
 
 if __name__ == '__main__':
     main()
