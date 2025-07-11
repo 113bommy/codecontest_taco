@@ -68,11 +68,9 @@ def parse_trace_string(trace_string):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--threshold', type = int, default = 4096)
-    parser.add_argument('--depth', type = str, default = 'small')
+    parser.add_argument('--depth', type = str, default = 'all')
     parser.add_argument('--data_type', type = str, default = 'hard')
     args = parser.parse_args()
-    threshold = args.threshold
     depth = args.depth
     data_type = args.data_type
     
