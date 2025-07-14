@@ -26,7 +26,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--single_all', type = str, default = 'all')
     parser.add_argument("--level", default = 'very_hard', type=str)
+    parser.add_argument('--incor_pass', default = 3, type = int)
+    parser.add_argument('--incor_fail', default = 3, type = int)
     args = parser.parse_args()
+    
+    incor_pass = args.incor_pass
+    incor_fail = args.incor_fail
     
     raw_file = os.path.join(os.getcwd(), 'python_data', f'python_{args.level}_final_filtered_all.jsonl.gz')
     raw_data_list = read_jsonl_gz(raw_file)
@@ -43,7 +48,7 @@ def main():
         
         parse_by_key[key].append(single_data)
         
-    sbfl_able_data_list = []
+    target_data_list = []
     for code_index, single_code in tqdm(enumerate(parse_by_key.values()), leave=True):
         no_exist = False
         yes_exist = False
@@ -68,18 +73,18 @@ def main():
                 yes_exist = True
                 incorrect_check += 1
         
-        if (no_exist and yes_exist) and incorrect_check >= 5:
-            sbfl_able_data_list.append(copy.deepcopy(single_code))
+        if (no_exist and yes_exist) and incorrect_check >= args.incor_fail and correct_check >= args.incor_pass:
+            target_data_list.append(copy.deepcopy(single_code))
             
-    if len(sbfl_able_data_list) > 200:
-        sbfl_able_data_list = sbfl_able_data_list[:200]
-    elif len(sbfl_able_data_list) < 200:
-        print(f'Warning: Data is less than 200, only {len(sbfl_able_data_list)} found.')
+    if len(target_data_list) > 200:
+        target_data_list = target_data_list[:200]
+    elif len(target_data_list) < 200:
+        print(f'Warning: Data is less than 200, only {len(target_data_list)} found.')
         
     print(f'Before Data filtering: {len(raw_data_list)}')
-    print(f'After Data filtering: {len(sbfl_able_data_list) * 10}')
+    print(f'After Data filtering: {len(target_data_list) * 10}')
     
-    save_dict_list_to_jsonl_gz(sbfl_able_data_list, os.path.join(os.getcwd(), f'{args.level}_data.jsonl.gz'))
+    save_dict_list_to_jsonl_gz(target_data_list, os.path.join(os.getcwd(), f'{args.level}_data.jsonl.gz'))
     
 if __name__ == "__main__":
     main()
