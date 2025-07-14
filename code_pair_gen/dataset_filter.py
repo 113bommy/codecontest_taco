@@ -78,7 +78,7 @@ def meets_filter(cor: Dict[str,List[int]],
     correct_pass = set(cor['pass'])
     incorrect_pass = set(inc['pass'])
     cor_pass_incor_fail = set(inc["fail"])
-    return len(correct_pass) >= cp and len(incorrect_pass) >= ip and len(cor_pass_incor_fail) >= _if
+    return len(correct_pass) >= cp and len(incorrect_pass) >= ip and len(cor_pass_incor_fail) >= i_f
 
 def build_item(pid:int, 
                idx:int, 
@@ -94,7 +94,7 @@ def build_item(pid:int,
         all_in, all_out = t_io["inputs"], t_io["outputs"]
 
     incor_pass = list(set(inc_r["pass"]))[:ip]
-    common_fail = list(set(inc_r["fail"]))[:_if]
+    common_fail = list(set(inc_r["fail"]))[:i_f]
 
     tc={
         "input":[all_in[i] for i in common_fail]+[all_in[i] for i in incor_pass],
@@ -132,16 +132,16 @@ def main()->None:
     ap.add_argument("--timeout",type=int,default=10)
     ap.add_argument('--cp', type=int, default=20)
     ap.add_argument('--ip', type=int, default=3)
-    ap.add_argument('--if', type=int, default=3)
+    ap.add_argument('--i_f', type=int, default=3)
     args=ap.parse_args()
 
     global cp
     global ip
-    global _if
+    global i_f
     
     cp = args.cp
     ip = args.ip
-    _if = args._if
+    i_f = args.i_f
     
     base=os.getcwd()
     src = os.path.join(
