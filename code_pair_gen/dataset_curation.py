@@ -13,7 +13,7 @@ import autopep8
 import orjson
 import multiprocessing as mp
 from black import FileMode, format_file_contents
-THRESHOLD = 35          # 원하는 최대 거리
+THRESHOLD = 50          # 원하는 최대 거리
 
 _BLACK_MODE = FileMode(
     target_versions=set(),  

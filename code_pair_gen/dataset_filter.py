@@ -75,9 +75,10 @@ def _evaluate_pair(task:Tuple[int,int,str,str,List[str],List[str],int,str]
 
 def meets_filter(cor: Dict[str,List[int]], 
                  inc: Dict[str,List[int]]) -> bool:
-    common_pass = set(cor["pass"]) & set(inc["pass"])
-    common_fail = set(cor["pass"]) & set(inc["fail"])
-    return len(common_fail) >= 5 and len(common_pass) >= 5
+    correct_pass = set(cor['pass'])
+    incorrect_pass = set(inc['pass'])
+    cor_pass_incor_fail = set(inc["fail"])
+    return len(correct_pass) >= cp and len(incorrect_pass) >= ip and len(cor_pass_incor_fail) >= _if
 
 def build_item(pid:int, 
                idx:int, 
@@ -92,12 +93,12 @@ def build_item(pid:int,
     else:
         all_in, all_out = t_io["inputs"], t_io["outputs"]
 
-    common_pass = list(set(cor_r["pass"]) & set(inc_r["pass"]))[:10]
-    common_fail = list(set(cor_r["pass"]) & set(inc_r["fail"]))[:10]
+    incor_pass = list(set(inc_r["pass"]))[:ip]
+    common_fail = list(set(inc_r["fail"]))[:_if]
 
     tc={
-        "input":[all_in[i] for i in common_fail]+[all_in[i] for i in common_pass],
-        "output":[all_out[i] for i in common_fail]+[all_out[i] for i in common_pass]
+        "input":[all_in[i] for i in common_fail]+[all_in[i] for i in incor_pass],
+        "output":[all_out[i] for i in common_fail]+[all_out[i] for i in incor_pass]
         }
 
     cor_src, inc_src = row["code_pair"][idx]
@@ -129,8 +130,19 @@ def main()->None:
     ap.add_argument("--workers",type=int,default=mp.cpu_count())
     ap.add_argument("--target_size",type=int,default=500)
     ap.add_argument("--timeout",type=int,default=10)
+    ap.add_argument('--cp', type=int, default=20)
+    ap.add_argument('--ip', type=int, default=3)
+    ap.add_argument('--if', type=int, default=3)
     args=ap.parse_args()
 
+    global cp
+    global ip
+    global _if
+    
+    cp = args.cp
+    ip = args.ip
+    _if = args._if
+    
     base=os.getcwd()
     src = os.path.join(
         base,
@@ -173,7 +185,7 @@ def main()->None:
             except StopIteration:
                 return
             ins, outs = io_cache[pid]
-            # tqdm.write(f"[SUBMIT] PID={pid:<4} idx={idx:<3} queued",file=sys.stderr)
+            tqdm.write(f"[SUBMIT] PID={pid:<4} idx={idx:<3} queued",file=sys.stderr)
             f = pool.submit(_evaluate_pair, 
                             (pid,idx,cor,inc,ins,outs,args.timeout,tmp_root)
                             )
@@ -206,9 +218,9 @@ def main()->None:
                     cor_p, cor_f = len(cor_r["pass"]), len(cor_r["fail"])
                     inc_p, inc_f = len(inc_r["pass"]), len(inc_r["fail"])
                     passed = meets_filter(cor_r,inc_r)
-                    # tqdm.write(f"[DONE]   PID={pid_:<4} idx={idx_:<3} "
-                    #            f"cor {cor_p}/{cor_f} | inc {inc_p}/{inc_f} -> "
-                    #            f"{'PASS' if passed else 'fail'}",file=sys.stderr)
+                    tqdm.write(f"[DONE]   PID={pid_:<4} idx={idx_:<3} "
+                               f"cor {cor_p}/{cor_f} | inc {inc_p}/{inc_f} -> "
+                               f"{'PASS' if passed else 'fail'}",file=sys.stderr)
 
                     if passed:
                         final_items.append(build_item(pid_,idx_,cor_r,inc_r,rows[pid_]))
