@@ -18,8 +18,16 @@ cd code_pair_gen
 # 데이터셋 전처리
 python dataset_curation.py
 
+# TACO 교집합 데이터 생성
+cd ./python_data
+python process_taco.py
+python process_deepmind.py
+python process_intersection.py
+python gen_level_data.py
+
 # Edit Distance & Test Case기반 필터링
-python dataset_filter.py --threshold 35 --level <level>
+cd ..
+python dataset_filter.py --threshold 50 --level <level>
 
 사용 가능한 <level> 값:
 easy, medium, medium_hard, hard, very_hard
